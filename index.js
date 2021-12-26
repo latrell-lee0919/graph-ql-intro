@@ -38,3 +38,23 @@ const typeDefs = gql`
     findPerson(name: String!): Person
     }
 `
+const resolvers = {
+    Query: {
+        personCount: () => persons.length,
+        allPersons: () => persons,
+        findPerson: (root, args) => 
+            persons.find(p => p.name === args.name)
+    }
+}
+
+const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    plugins: [
+        ApolloServerPluginLandingPageGraphQLPlayground(),
+      ],
+})
+
+server.listen().then(({ url }) => {
+    console.log(`Server ready at ${url}`)
+})

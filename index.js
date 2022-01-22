@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken')
 const { v1: uuid } = require('uuid')
 const Person = require('./models/person')
 const User = require('./models/user')
+const { PubSub } = require('graphql-subscriptions')
+const pubsub = new PubSub()
 require('dotenv').config()
 
 const MONGODB_URI = `mongodb+srv://latrell_admin:${process.env.MONGO_DB_PASSWORD}@cluster0.8d7xk.mongodb.net/graphql?retryWrites=true&w=majority`
@@ -48,6 +50,10 @@ const typeDefs = gql`
   enum YesNo {
     YES
     NO
+  }
+
+  type Subscription {
+    personAdded: Person!
   }
 
   type Address {
@@ -144,6 +150,8 @@ const resolvers = {
         })
       }
 
+      pubsub.publish('PERSON_ADDED', { personAdded: person })
+
       return person
     },
     editNumber: async (root, args) => {
@@ -204,7 +212,12 @@ const resolvers = {
       return currentUser
 
     }
-  }
+  },
+  Subscription: {
+    personAdded: {
+      subscribe: () => pubsub.asyncIterator(['PERSON_ADDED'])
+    },
+  },
 }
 
 const server = new ApolloServer({
@@ -225,6 +238,7 @@ const server = new ApolloServer({
     }
 })
 
-server.listen().then(({ url }) => {
-    console.log(`Server ready at ${url}`)
+server.listen().then(({ url, subscriptionsUrl }) => {
+  console.log(`Server ready at ${url}`)
+  console.log(`Subscriptions ready at ${subscriptionsUrl}`)
 })
